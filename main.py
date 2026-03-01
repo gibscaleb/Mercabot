@@ -38,16 +38,17 @@ async def read_root(request: Request, q: str = None, selected_id: str = None):
     data = []
     producto_grafica = None
 
-    if productos:
-        producto_grafica = productos[0]
-        pid = producto_grafica['id']
+    if productos and selected_id:
+        producto_grafica = next((p for p in productos if str(p['id']) == selected_id), None)
         
-        # historial ordenado por fecha
-        cursor.execute("SELECT precio_visto, fecha_muestreo FROM historial_precios WHERE producto_id = %s ORDER BY fecha_muestreo ASC", (pid,))
-        history = cursor.fetchall()
-        
-        labels = [h['fecha_muestreo'].strftime("%Y-%m-%d %H:%M") for h in history]
-        data = [float(h['precio_visto']) for h in history]
+        if producto_grafica:
+            pid = producto_grafica['id']
+            # historial ordenado por fecha
+            cursor.execute("SELECT precio_visto, fecha_muestreo FROM historial_precios WHERE producto_id = %s ORDER BY fecha_muestreo ASC", (pid,))
+            history = cursor.fetchall()
+            
+            labels = [h['fecha_muestreo'].strftime("%Y-%m-%d %H:%M") for h in history]
+            data = [float(h['precio_visto']) for h in history]
 
     cursor.close()
     conn.close()
@@ -59,7 +60,7 @@ async def read_root(request: Request, q: str = None, selected_id: str = None):
         "chart_data": data,
         "query": q, 
         "producto_grafica": producto_grafica
-    })
+    }) 
 
 # simulador del bot(scrapper)
 @app.post("/buscar-precio")

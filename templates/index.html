@@ -99,11 +99,13 @@
                         {% endif %}
                     </div>
                     <div class="card-body">
-                        <canvas id="priceChart"></canvas>
-                        
-                        {% if not producto_grafica %}
-                            <div class="alert alert-info mt-3">
-                                Selecciona o busca un producto para ver su historial.
+                        {% if producto_grafica %}
+                            <canvas id="priceChart"></canvas>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <h1 class="display-3 text-muted opacity-50 mb-3">📊</h1>
+                                <h5 class="text-secondary">Selecciona un producto</h5>
+                                <p class="text-muted">Haz clic sobre cualquier producto de la lista izquierda para visualizar su evolución de precios.</p>
                             </div>
                         {% endif %}
                     </div>
@@ -112,8 +114,9 @@
         </div>
     </div>
 
+    {% if producto_grafica %}
     <script>
-        const ctx = document.getElementById('priceChart').getContext('2d');
+       const ctx = document.getElementById('priceChart').getContext('2d');
         const priceChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -121,31 +124,15 @@
                 datasets: [{
                     label: 'Precio Detectado (MXN)',
                     data: {{ chart_data | tojson }},
-                    borderColor: '#0d6efd', 
+                    borderColor: '#0d6efd',
                     backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#0d6efd',
-                    tension: 0.3, 
-                    fill: true
+                    borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#fff',
+                    pointBorderColor: '#0d6efd', tension: 0.3, fill: true
                 }]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: true, position: 'bottom' }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        ticks: {
-                            callback: function(value) { return '$' + value; }
-                        }
-                    }
-                }
-            }
+            options: { responsive: true, plugins: { legend: { display: true, position: 'bottom' } } }
         });
     </script>
+    {% endif %}
 </body>
 </html>
