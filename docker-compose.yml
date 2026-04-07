@@ -1,0 +1,36 @@
+
+services:
+  # 1. Contenedor de la Base de Datos (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: mercabot_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: mercabot
+    ports:
+      - "5432:5432"
+    volumes:
+      # Esto carga las tablas automáticamente la primera vez
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Esto hace que los datos sean persistentes (RNF-01)
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. Contenedor de tu Aplicación (FastAPI)
+  web:
+    build: .
+    container_name: mercabot_web
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      # Le decimos a Python cómo conectarse a la DB de arriba
+      - DB_HOST=db
+      - DB_USER=admin
+      - DB_PASSWORD=password123
+      - DB_NAME=mercabot
+
+volumes:
+  postgres_data:

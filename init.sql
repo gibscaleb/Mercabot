@@ -1,0 +1,64 @@
+
+
+-- Tabla de Productos
+CREATE TABLE productos (
+    id CHAR(36) PRIMARY KEY,
+    nombre_producto VARCHAR(255) NOT NULL,
+    url_original TEXT NOT NULL,
+    precio_objetivo DECIMAL(12, 2) NOT NULL,
+    tienda_origen VARCHAR(50),
+    imagen_thumbnail TEXT,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de Historial
+CREATE TABLE historial_precios (
+    id SERIAL PRIMARY KEY,
+    producto_id CHAR(36),
+    precio_visto DECIMAL(12, 2) NOT NULL,
+    fecha_muestreo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    descuento_detectado BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- 3. INSERCIÓN DE LOS 9 PRODUCTOS (CON LINKS ESTABLES)
+-- ==========================================
+
+-- FAMILIA XBOX
+INSERT INTO productos (id, nombre_producto, url_original, precio_objetivo, tienda_origen, imagen_thumbnail) VALUES 
+('xb01-xb01-xb01-xb01-xb01xb01xb01', 'Microsoft Xbox Series X 1TB - Negro', 'https://amazon.mx/xbox-x', 11000.00, 'Amazon MX', 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Xbox_Series_X_Console.png/320px-Xbox_Series_X_Console.png'),
+('xb02-xb02-xb02-xb02-xb02xb02xb02', 'Microsoft Xbox Series S 512GB - Blanco', 'https://amazon.mx/xbox-s', 5500.00, 'Amazon MX', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Xbox_Series_S.png/320px-Xbox_Series_S.png'),
+('xb03-xb03-xb03-xb03-xb03xb03xb03', 'Microsoft Xbox Series S 1TB - Carbón (Black)', 'https://amazon.mx/xbox-s-black', 7200.00, 'MercadoLibre', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Xbox_Series_S.png/320px-Xbox_Series_S.png');
+
+-- FAMILIA PLAYSTATION
+INSERT INTO productos (id, nombre_producto, url_original, precio_objetivo, tienda_origen, imagen_thumbnail) VALUES 
+('ps01-ps01-ps01-ps01-ps01ps01ps01', 'Sony PlayStation 5 Slim (Edición Estándar)', 'https://amazon.mx/ps5-slim', 9200.00, 'Amazon MX', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/PlayStation_5_Digital_Edition_with_DualSense.jpg/320px-PlayStation_5_Digital_Edition_with_DualSense.jpg'),
+('ps02-ps02-ps02-ps02-ps02ps02ps02', 'Sony PlayStation 5 Slim (Edición Digital)', 'https://amazon.mx/ps5-digital', 8000.00, 'Amazon MX', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/PlayStation_5_Digital_Edition_with_DualSense.jpg/320px-PlayStation_5_Digital_Edition_with_DualSense.jpg'),
+('ps03-ps03-ps03-ps03-ps03ps03ps03', 'Sony PlayStation 5 Pro (Preventa)', 'https://amazon.mx/ps5-pro', 14500.00, 'MercadoLibre', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/PlayStation_5_Digital_Edition_with_DualSense.jpg/320px-PlayStation_5_Digital_Edition_with_DualSense.jpg');
+
+-- FAMILIA NINTENDO
+INSERT INTO productos (id, nombre_producto, url_original, precio_objetivo, tienda_origen, imagen_thumbnail) VALUES 
+('sw01-sw01-sw01-sw01-sw01sw01sw01', 'Nintendo Switch Modelo OLED - Blanco', 'https://amazon.mx/switch-oled', 6500.00, 'Amazon MX', 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Nintendo_Switch_OLED_model.png/320px-Nintendo_Switch_OLED_model.png'),
+('sw02-sw02-sw02-sw02-sw02sw02sw02', 'Nintendo Switch V2 Neon - Rojo/Azul', 'https://amazon.mx/switch-neon', 5200.00, 'MercadoLibre', 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Nintendo-Switch-wJoyCons-BlRd-Standing-Frt.png/320px-Nintendo-Switch-wJoyCons-BlRd-Standing-Frt.png'),
+('sw03-sw03-sw03-sw03-sw03sw03sw03', 'Nintendo Switch Lite - Turquesa', 'https://amazon.mx/switch-lite', 3500.00, 'Amazon MX', 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Nintendo_Switch_Lite_representation.png/320px-Nintendo_Switch_Lite_representation.png');
+
+-- ==========================================
+-- 4. HISTORIAL DE PRECIOS INICIAL
+-- ==========================================
+
+INSERT INTO historial_precios (producto_id, precio_visto, fecha_muestreo, descuento_detectado) VALUES
+('xb01-xb01-xb01-xb01-xb01xb01xb01', 13999.00, NOW() - INTERVAL '5 days', FALSE),
+('xb01-xb01-xb01-xb01-xb01xb01xb01', 12500.00, NOW() - INTERVAL '3 days', FALSE),
+('xb01-xb01-xb01-xb01-xb01xb01xb01', 11200.00, NOW() - INTERVAL '1 day', FALSE),
+
+('xb02-xb02-xb02-xb02-xb02xb02xb02', 6200.00, NOW() - INTERVAL '4 days', FALSE),
+('xb02-xb02-xb02-xb02-xb02xb02xb02', 5900.00, NOW() - INTERVAL '2 days', FALSE),
+('xb02-xb02-xb02-xb02-xb02xb02xb02', 5400.00, NOW() - INTERVAL '12 hours', TRUE),
+
+('ps01-ps01-ps01-ps01-ps01ps01ps01', 9000.00, NOW() - INTERVAL '6 days', TRUE),
+('ps01-ps01-ps01-ps01-ps01ps01ps01', 9500.00, NOW() - INTERVAL '2 days', FALSE),
+('ps01-ps01-ps01-ps01-ps01ps01ps01', 9800.00, NOW() - INTERVAL '1 hour', FALSE),
+
+('sw01-sw01-sw01-sw01-sw01sw01sw01', 7500.00, NOW() - INTERVAL '3 days', FALSE),
+('sw01-sw01-sw01-sw01-sw01sw01sw01', 6400.00, NOW() - INTERVAL '1 day', TRUE);
