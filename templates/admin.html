@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Administración - MercaBot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark mb-4"><div class="container"><span class="navbar-brand">⚙️ Panel de Control MercaBot</span><a href="/" class="btn btn-outline-light btn-sm">Volver al Sitio</a></div></nav>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5>Usuarios</h5>
+                        <div class="display-6">{{ usuarios | length }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white"><b>Lista de Usuarios</b></div>
+                    <div class="card-body">
+                        <table class="table table-hover">
+                            <thead><tr><th>ID</th><th>Email</th><th>Admin</th><th>Registro</th></tr></thead>
+                            <tbody>
+                                {% for u in usuarios %}
+                                <tr>
+                                    <td>{{ u.id }}</td>
+                                    <td>{{ u.email }}</td>
+                                    <td>{{ 'SÍ' if u.es_admin else 'NO' }}</td>
+                                    <td>{{ u.fecha_registro.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

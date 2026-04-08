@@ -1,0 +1,5 @@
+db:
+  user: "admin"
+  password: "password123"
+  name: "mercabot"
+  
