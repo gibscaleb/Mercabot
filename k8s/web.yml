@@ -1,0 +1,47 @@
+---
+# 1. El Contenedor de la Aplicación (Deployment)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: web
+        image: mercabot-web:latest
+        imagePullPolicy: Never # Muy importante: Le dice que use la imagen local que acabamos de construir
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          value: "db" # Se conecta al Service de PostgreSQL
+        - name: DB_USER
+          value: "admin"
+        - name: DB_PASSWORD
+          value: "password123"
+        - name: DB_NAME
+          value: "mercabot"
+
+---
+# 2. La Puerta de Salida al Navegador (Service tipo NodePort)
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+spec:
+  type: NodePort
+  selector:
+    app: web
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30000 # Forzamos que abra en este puerto específico
