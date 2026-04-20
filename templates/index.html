@@ -1,162 +1,376 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <title>MercaBot - Amazon Price Tracker</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root { --camel-green: #2d8a28; --camel-blue: #0066ee; --amazon-yellow: #ffc439; }
-        body { background-color: #f6f6f6; font-family: Arial, sans-serif; color: #333; }
-        .navbar { background: white; border-bottom: 1px solid #ddd; padding: 1rem; }
-        .product-card { border: none; border-bottom: 1px solid #eee; transition: 0.2s; cursor: pointer; }
-        .product-card:hover { background-color: #f0f7ff; }
-        .active-product { border-left: 5px solid var(--camel-green); background-color: #f0f7ff; }
-        .detail-box { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 2rem; }
-        .price-large { font-size: 2.5rem; font-weight: bold; }
-        .btn-amazon { background-color: var(--amazon-yellow); border: 1px solid #a88734; border-radius: 20px; font-weight: bold; width: 100%; }
-        .btn-track { background-color: var(--camel-blue); color: white; border-radius: 20px; font-weight: bold; width: 100%; border: none; }
-        .stats-table th { color: #666; font-size: 0.8rem; text-transform: uppercase; border: none; }
-        .stats-table td { font-weight: bold; border: none; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-<nav class="navbar navbar-expand-lg mb-4 shadow-sm">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="/">🤖 <span style="color: #444;">MercaBot</span></a>
-        <form action="/" method="get" class="d-flex flex-grow-1 mx-4">
-            <input type="text" name="q" class="form-control rounded-pill px-4" placeholder="Buscar productos..." value="{{ query if query else '' }}">
-        </form>
-        <div class="d-flex align-items-center">
-            {% if user %}
-                <span class="me-3 small">Hola, <b>{{ user.email }}</b></span>
-                {% if user.es_admin %}<a href="/admin" class="btn btn-dark btn-sm me-2">Admin</a>{% endif %}
-                <a href="/logout" class="btn btn-outline-danger btn-sm">Salir</a>
-            {% else %}
-                <a href="/login" class="btn btn-dark btn-sm me-2">Iniciar Sesión</a>
-                <a href="/registro" class="btn btn-outline-dark btn-sm">Registrarse</a>
-            {% endif %}
-        </div>
+{% block title %}MercaBot — Tracker de Precios{% endblock %}
+
+{% block extra_css %}
+.page-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 2rem; gap: 1rem;
+}
+.page-title { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+.page-title span { color: var(--accent); }
+.page-subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+
+/* SEARCH BAR */
+.search-bar {
+    display: flex; gap: 0.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem;
+    transition: border-color 0.2s;
+    min-width: 320px;
+}
+.search-bar:focus-within { border-color: var(--accent); box-shadow: var(--glow); }
+.search-bar input {
+    background: none; border: none; flex: 1;
+    font-size: 0.9rem; color: var(--text);
+    padding: 0.2rem 0.5rem;
+}
+.search-bar input:focus { outline: none; box-shadow: none; }
+.search-bar button {
+    background: var(--accent); color: var(--bg);
+    border: none; border-radius: 8px;
+    padding: 0.45rem 1rem;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; transition: all 0.2s;
+}
+.search-bar button:hover { background: #33ddff; }
+
+/* LAYOUT */
+.tracker-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+@media(max-width: 900px) { .tracker-layout { grid-template-columns: 1fr; } }
+
+/* PRODUCT LIST */
+.products-panel { display: flex; flex-direction: column; gap: 0.7rem; }
+.product-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex; align-items: center; gap: 0.9rem;
+    cursor: pointer; text-decoration: none; color: var(--text);
+    transition: all 0.2s;
+    position: relative;
+}
+.product-card:hover { border-color: rgba(0,212,255,0.4); transform: translateX(3px); }
+.product-card.selected {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.05);
+    box-shadow: var(--glow);
+}
+.product-thumb {
+    width: 52px; height: 52px; border-radius: 8px;
+    object-fit: contain; background: #fff;
+    padding: 4px; flex-shrink: 0;
+}
+.product-info { flex: 1; min-width: 0; }
+.product-name {
+    font-size: 0.85rem; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.product-meta { display: flex; gap: 0.5rem; margin-top: 0.3rem; align-items: center; }
+.product-price { font-family: 'Space Mono', monospace; font-size: 0.88rem; color: var(--accent); font-weight: 700; }
+.product-store { font-size: 0.72rem; color: var(--muted); }
+.product-indicator {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.product-card.selected .product-indicator { opacity: 1; }
+
+/* CHART PANEL */
+.chart-panel { display: flex; flex-direction: column; gap: 1.5rem; }
+.empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1rem;
+    padding: 5rem 2rem;
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    color: var(--muted);
+    text-align: center;
+}
+.empty-icon { font-size: 3rem; opacity: 0.4; }
+.empty-state h3 { font-size: 1.1rem; color: var(--text); }
+.empty-state p { font-size: 0.88rem; max-width: 280px; line-height: 1.5; }
+
+/* PRODUCT DETAIL HEADER */
+.detail-header {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    display: flex; gap: 1.5rem; align-items: flex-start;
+}
+.detail-thumb {
+    width: 80px; height: 80px; border-radius: 10px;
+    object-fit: contain; background: #fff;
+    padding: 6px; flex-shrink: 0;
+}
+.detail-info { flex: 1; }
+.detail-name { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
+.detail-actions { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
+
+/* STATS GRID */
+.stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+}
+@media(max-width:700px){ .stats-grid { grid-template-columns: repeat(2,1fr); } }
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem;
+    text-align: center;
+}
+.stat-label {
+    font-size: 0.72rem; font-weight: 700;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 0.5rem;
+    font-family: 'Space Mono', monospace;
+}
+.stat-value { font-size: 1.4rem; font-weight: 800; font-family: 'Space Mono', monospace; }
+.stat-current .stat-value { color: var(--accent); }
+.stat-min .stat-value { color: var(--accent2); }
+.stat-max .stat-value { color: var(--danger); }
+.stat-avg .stat-value { color: var(--warn); }
+
+/* CHART BOX */
+.chart-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+}
+.chart-box-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.2rem;
+}
+.chart-box-title { font-size: 0.9rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* NO HISTORY */
+.no-history {
+    text-align: center; padding: 2.5rem;
+    color: var(--muted); font-size: 0.9rem;
+}
+
+/* FAV BUTTON */
+.fav-btn-wrapper form { display: inline; }
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Tracker de <span>Precios</span></h1>
+        <p class="page-subtitle">Monitorea {{ productos|length }} productos en tiempo real</p>
     </div>
-</nav>
-
-<div class="container">
-    <div class="row">
-        <div class="col-lg-4">
-            <div class="bg-white border rounded shadow-sm">
-                <div class="p-3 border-bottom bg-light"><b>Resultados de búsqueda</b></div>
-                <div class="list-group list-group-flush">
-                    {% for p in productos %}
-                    <a href="/?selected_id={{ p.id }}{% if query %}&q={{ query }}{% endif %}" 
-                       class="list-group-item product-card {% if producto_grafica and producto_grafica.id == p.id %}active-product{% endif %}">
-                        <div class="d-flex align-items-center">
-                            <img src="{{ p.imagen_thumbnail }}" style="width: 60px; height: 60px; object-fit: contain;" class="me-3">
-                            <div class="overflow-hidden">
-                                <div class="text-truncate fw-bold small">{{ p.nombre_producto }}</div>
-                                <div class="text-success small fw-bold">Meta: ${{ p.precio_objetivo }}</div>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-8">
-            {% if producto_grafica %}
-            <div class="detail-box shadow-sm">
-                <div class="row mb-4">
-                    <div class="col-md-4 text-center">
-                        <img src="{{ producto_grafica.imagen_thumbnail }}" class="img-fluid" style="max-height: 250px;">
-                    </div>
-                    <div class="col-md-5">
-                        <h3 class="fw-bold">{{ producto_grafica.nombre_producto }}</h3>
-                        <p class="text-muted">Tienda oficial: {{ producto_grafica.tienda_origen }}</p>
-                        <div class="mt-4">
-                            <p class="mb-0 text-muted small">Precio Actual</p>
-                            <div class="price-large">${{ stats.current }}</div>
-                            <span class="badge bg-success">Mejor precio detectado</span>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <button class="btn btn-amazon py-2 mb-2">Ver en Amazon</button>
-                        <form action="/agregar-favorito" method="post">
-                            <input type="hidden" name="producto_id" value="{{ producto_grafica.id }}">
-                            <button type="submit" class="btn btn-track py-2">+ Add Price Watch</button>
-                        </form>
-                        <form action="/buscar-precio" method="post" class="mt-2">
-                            <input type="hidden" name="producto_id" value="{{ producto_grafica.id }}">
-                            <button type="submit" class="btn btn-light btn-sm w-100 border text-muted">Actualizar Datos</button>
-                        </form>
-                    </div>
-                </div>
-
-                <hr class="my-4">
-                <h5 class="fw-bold mb-4">Amazon Price History</h5>
-                <div style="height: 350px;">
-                    <canvas id="priceChart"></canvas>
-                </div>
-
-                <table class="table stats-table mt-5">
-                    <thead>
-                        <tr>
-                            <th>TIPO DE PRECIO</th>
-                            <th>MÁS ALTO</th>
-                            <th>MÁS BAJO</th>
-                            <th>PROMEDIO</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span style="color: var(--camel-green)">●</span> Amazon</td>
-                            <td>${{ stats.max }}</td>
-                            <td>${{ stats.min }}</td>
-                            <td>${{ stats.avg }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="detail-box text-center py-5">
-                <h2 class="text-muted opacity-25 mb-4">📊</h2>
-                <p class="text-muted">Selecciona un producto del catálogo para ver su historial detallado.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
+    <form class="search-bar" action="/" method="get">
+        <i class="fa fa-search" style="color:var(--muted); padding: 0.2rem 0.3rem; align-self:center;"></i>
+        <input type="text" name="q" placeholder="Buscar producto..." value="{{ query or '' }}" autocomplete="off">
+        <button type="submit">Buscar</button>
+        {% if query %}<a href="/" style="align-self:center; color:var(--muted); text-decoration:none; font-size:0.8rem; padding:0 0.3rem;" title="Limpiar">✕</a>{% endif %}
+    </form>
 </div>
 
-{% if producto_grafica %}
+<div class="tracker-layout">
+    <!-- LISTA DE PRODUCTOS -->
+    <div class="products-panel">
+        {% if productos %}
+            {% for p in productos %}
+            <a href="/?selected_id={{ p.id }}" class="product-card {% if producto_grafica and producto_grafica.id == p.id %}selected{% endif %}">
+                <img class="product-thumb" src="{{ p.imagen_thumbnail or 'https://via.placeholder.com/52' }}" alt="{{ p.nombre_producto }}" onerror="this.src='https://via.placeholder.com/52'">
+                <div class="product-info">
+                    <div class="product-name">{{ p.nombre_producto }}</div>
+                    <div class="product-meta">
+                        <span class="product-price">$MX {{ "%.2f"|format(p.precio_objetivo) }}</span>
+                        <span class="product-store">{{ p.tienda_origen }}</span>
+                    </div>
+                </div>
+                <div class="product-indicator"></div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3>Sin resultados</h3>
+                <p>No se encontraron productos para "{{ query }}"</p>
+                <a href="/" class="btn btn-ghost">Ver todos</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- PANEL DE GRÁFICA -->
+    <div class="chart-panel">
+        {% if producto_grafica %}
+            <!-- HEADER DEL PRODUCTO -->
+            <div class="detail-header">
+                <img class="detail-thumb"
+                     src="{{ producto_grafica.imagen_thumbnail or 'https://via.placeholder.com/80' }}"
+                     alt="{{ producto_grafica.nombre_producto }}"
+                     onerror="this.src='https://via.placeholder.com/80'">
+                <div class="detail-info">
+                    <div class="detail-name">{{ producto_grafica.nombre_producto }}</div>
+                    <div style="margin-top:0.4rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+                        <span class="badge badge-blue">{{ producto_grafica.tienda_origen }}</span>
+                        <span style="font-family:'Space Mono',monospace; font-size:0.8rem; color:var(--muted);">Objetivo: $MX {{ "%.2f"|format(producto_grafica.precio_objetivo) }}</span>
+                    </div>
+                    <div class="detail-actions">
+                        <form action="/buscar-precio" method="post" style="display:inline;">
+                            <input type="hidden" name="producto_id" value="{{ producto_grafica.id }}">
+                            <button type="submit" class="btn btn-accent btn-sm">
+                                <i class="fa fa-rotate"></i> Actualizar precio
+                            </button>
+                        </form>
+                        {% if user %}
+                            <form action="/agregar-favorito" method="post" style="display:inline;">
+                                <input type="hidden" name="producto_id" value="{{ producto_grafica.id }}">
+                                <button type="submit" class="btn btn-sm" style="background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.3);color:var(--danger);">
+                                    <i class="fa fa-heart"></i> Favorito
+                                </button>
+                            </form>
+                        {% endif %}
+                        <a href="{{ producto_grafica.url_original }}" target="_blank" class="btn btn-ghost btn-sm">
+                            <i class="fa fa-arrow-up-right-from-square"></i> Ver tienda
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STATS -->
+            {% if stats %}
+            <div class="stats-grid">
+                <div class="stat-card stat-current">
+                    <div class="stat-label">Precio Actual</div>
+                    <div class="stat-value">${{ "%.0f"|format(stats.current) }}</div>
+                </div>
+                <div class="stat-card stat-min">
+                    <div class="stat-label">Mínimo</div>
+                    <div class="stat-value">${{ "%.0f"|format(stats.min) }}</div>
+                </div>
+                <div class="stat-card stat-max">
+                    <div class="stat-label">Máximo</div>
+                    <div class="stat-value">${{ "%.0f"|format(stats.max) }}</div>
+                </div>
+                <div class="stat-card stat-avg">
+                    <div class="stat-label">Promedio</div>
+                    <div class="stat-value">${{ "%.0f"|format(stats.avg) }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- GRÁFICA -->
+            <div class="chart-box">
+                <div class="chart-box-header">
+                    <span class="chart-box-title">Historial de precios</span>
+                    <span class="badge badge-muted">{{ chart_labels|length }} registros</span>
+                </div>
+                {% if chart_labels %}
+                    <canvas id="priceChart" height="220"></canvas>
+                {% else %}
+                    <div class="no-history">
+                        <i class="fa fa-chart-line" style="font-size:2rem; margin-bottom:0.8rem; display:block; opacity:0.3;"></i>
+                        <p>Sin historial todavía. Haz clic en <strong>Actualizar precio</strong> para generar datos.</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="empty-state" style="min-height: 500px;">
+                <div class="empty-icon">📡</div>
+                <h3>Selecciona un producto</h3>
+                <p>Haz clic en cualquier producto de la lista para ver su historial de precios y estadísticas.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% if chart_labels %}
 <script>
-    const ctx = document.getElementById('priceChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {{ chart_labels | tojson }},
-            datasets: [{
-                data: {{ chart_data | tojson }},
-                borderColor: '#2d8a28',
-                borderWidth: 2,
-                stepped: true, // Efecto Camel
+const ctx = document.getElementById('priceChart').getContext('2d');
+const labels = {{ chart_labels | tojson }};
+const data   = {{ chart_data  | tojson }};
+const objetivo = {{ producto_grafica.precio_objetivo }};
+
+const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+gradient.addColorStop(0, 'rgba(0,212,255,0.25)');
+gradient.addColorStop(1, 'rgba(0,212,255,0)');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [
+            {
+                label: 'Precio registrado',
+                data,
+                borderColor: '#00d4ff',
+                backgroundColor: gradient,
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#00d4ff',
+                pointBorderColor: '#080c10',
+                pointBorderWidth: 2,
+                tension: 0.35,
+                fill: true,
+            },
+            {
+                label: 'Precio objetivo',
+                data: Array(labels.length).fill(objetivo),
+                borderColor: 'rgba(255,165,2,0.6)',
+                borderWidth: 1.5,
+                borderDash: [6, 4],
                 pointRadius: 0,
                 fill: false,
-                tension: 0
-            }]
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#5a7a8a',
+                    font: { family: 'Space Mono', size: 11 },
+                    boxWidth: 14,
+                }
+            },
+            tooltip: {
+                backgroundColor: '#131a22',
+                borderColor: '#1e2a35',
+                borderWidth: 1,
+                titleColor: '#e8f0f7',
+                bodyColor: '#5a7a8a',
+                callbacks: {
+                    label: ctx => ` $MX ${ctx.parsed.y.toLocaleString('es-MX', {minimumFractionDigits: 2})}`
+                }
+            }
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { grid: { color: '#eee' }, ticks: { callback: v => '$' + v } },
-                x: { grid: { display: false } }
+        scales: {
+            x: {
+                ticks: { color: '#5a7a8a', font: { family: 'Space Mono', size: 10 }, maxTicksLimit: 8 },
+                grid: { color: 'rgba(30,42,53,0.8)' }
+            },
+            y: {
+                ticks: {
+                    color: '#5a7a8a',
+                    font: { family: 'Space Mono', size: 10 },
+                    callback: v => '$' + v.toLocaleString('es-MX')
+                },
+                grid: { color: 'rgba(30,42,53,0.8)' }
             }
         }
-    });
+    }
+});
 </script>
 {% endif %}
-</body>
-</html>
+{% endblock %}

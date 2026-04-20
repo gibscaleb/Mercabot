@@ -1,4 +1,4 @@
--- 1. Tabla de Usuarios (Debe ir primero para que favoritos la pueda referenciar)
+-- 1. Tabla de Usuarios 
 CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
