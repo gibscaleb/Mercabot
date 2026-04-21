@@ -1,139 +1,142 @@
 {% extends "base.html" %}
-
 {% block title %}MercaBot — Tracker de Precios{% endblock %}
 
 {% block extra_css %}
 .page-header {
     display: flex; align-items: flex-start; justify-content: space-between;
-    margin-bottom: 2rem; gap: 1rem;
+    margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;
 }
 .page-title { font-size: 2rem; font-weight: 800; line-height: 1.1; }
 .page-title span { color: var(--accent); }
 .page-subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
 
-/* SEARCH BAR */
 .search-bar {
     display: flex; gap: 0.5rem;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 0.5rem;
-    transition: border-color 0.2s;
-    min-width: 320px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 0.5rem;
+    transition: border-color 0.2s; min-width: 300px;
 }
 .search-bar:focus-within { border-color: var(--accent); box-shadow: var(--glow); }
 .search-bar input {
     background: none; border: none; flex: 1;
-    font-size: 0.9rem; color: var(--text);
-    padding: 0.2rem 0.5rem;
+    font-size: 0.9rem; color: var(--text); padding: 0.2rem 0.5rem;
 }
 .search-bar input:focus { outline: none; box-shadow: none; }
 .search-bar button {
     background: var(--accent); color: var(--bg);
-    border: none; border-radius: 8px;
-    padding: 0.45rem 1rem;
+    border: none; border-radius: 8px; padding: 0.45rem 1rem;
     font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
     cursor: pointer; transition: all 0.2s;
 }
 .search-bar button:hover { background: #33ddff; }
 
-/* LAYOUT */
 .tracker-layout {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 1.5rem;
-    align-items: start;
+    display: grid; grid-template-columns: 380px 1fr;
+    gap: 1.5rem; align-items: start;
 }
 @media(max-width: 900px) { .tracker-layout { grid-template-columns: 1fr; } }
 
-/* PRODUCT LIST */
 .products-panel { display: flex; flex-direction: column; gap: 0.7rem; }
 .product-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem;
     display: flex; align-items: center; gap: 0.9rem;
     cursor: pointer; text-decoration: none; color: var(--text);
-    transition: all 0.2s;
-    position: relative;
+    transition: all 0.2s; position: relative;
 }
 .product-card:hover { border-color: rgba(0,212,255,0.4); transform: translateX(3px); }
-.product-card.selected {
-    border-color: var(--accent);
-    background: rgba(0,212,255,0.05);
-    box-shadow: var(--glow);
-}
+.product-card.selected { border-color: var(--accent); background: rgba(0,212,255,0.05); box-shadow: var(--glow); }
 .product-thumb {
     width: 52px; height: 52px; border-radius: 8px;
-    object-fit: contain; background: #fff;
-    padding: 4px; flex-shrink: 0;
+    object-fit: contain; background: #fff; padding: 4px; flex-shrink: 0;
 }
 .product-info { flex: 1; min-width: 0; }
-.product-name {
-    font-size: 0.85rem; font-weight: 600;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+.product-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .product-meta { display: flex; gap: 0.5rem; margin-top: 0.3rem; align-items: center; }
 .product-price { font-family: 'Space Mono', monospace; font-size: 0.88rem; color: var(--accent); font-weight: 700; }
 .product-store { font-size: 0.72rem; color: var(--muted); }
-.product-indicator {
+.product-fav-dot {
     width: 8px; height: 8px; border-radius: 50%;
-    background: var(--accent); flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.2s;
+    background: var(--danger); flex-shrink: 0;
 }
-.product-card.selected .product-indicator { opacity: 1; }
 
-/* CHART PANEL */
 .chart-panel { display: flex; flex-direction: column; gap: 1.5rem; }
 .empty-state {
     display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 1rem;
-    padding: 5rem 2rem;
-    background: var(--card);
-    border: 1px dashed var(--border);
-    border-radius: 14px;
-    color: var(--muted);
-    text-align: center;
+    justify-content: center; gap: 1rem; padding: 5rem 2rem;
+    background: var(--card); border: 1px dashed var(--border);
+    border-radius: 14px; color: var(--muted); text-align: center;
 }
 .empty-icon { font-size: 3rem; opacity: 0.4; }
 .empty-state h3 { font-size: 1.1rem; color: var(--text); }
-.empty-state p { font-size: 0.88rem; max-width: 280px; line-height: 1.5; }
 
-/* PRODUCT DETAIL HEADER */
 .detail-header {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.5rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.5rem;
     display: flex; gap: 1.5rem; align-items: flex-start;
 }
 .detail-thumb {
     width: 80px; height: 80px; border-radius: 10px;
-    object-fit: contain; background: #fff;
-    padding: 6px; flex-shrink: 0;
+    object-fit: contain; background: #fff; padding: 6px; flex-shrink: 0;
 }
-.detail-info { flex: 1; }
 .detail-name { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
 .detail-actions { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
 
-/* STATS GRID */
+/* BOTÓN FAVORITO — estados */
+.btn-fav {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.35rem 0.75rem; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; border: none; transition: all 0.25s;
+}
+.btn-fav-add {
+    background: rgba(255,71,87,0.1);
+    border: 1px solid rgba(255,71,87,0.3);
+    color: var(--danger);
+}
+.btn-fav-add:hover {
+    background: var(--danger); color: #fff;
+    transform: scale(1.05);
+}
+.btn-fav-remove {
+    background: var(--danger); color: #fff;
+    border: 1px solid var(--danger);
+    animation: pulse-fav 0.3s ease;
+}
+.btn-fav-remove:hover {
+    background: rgba(255,71,87,0.7);
+    transform: scale(1.05);
+}
+@keyframes pulse-fav {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+/* BTN ACTUALIZAR - animación de carga */
+.btn-update {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.35rem 0.75rem; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; background: var(--accent); color: var(--bg);
+    border: none; transition: all 0.2s;
+}
+.btn-update:hover { background: #33ddff; }
+.btn-update:active { transform: scale(0.97); }
+.btn-update.loading .fa-rotate { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .stats-grid {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
 }
 @media(max-width:700px){ .stats-grid { grid-template-columns: repeat(2,1fr); } }
 .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.1rem;
-    text-align: center;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.1rem; text-align: center;
 }
 .stat-label {
-    font-size: 0.72rem; font-weight: 700;
-    color: var(--muted); text-transform: uppercase;
-    letter-spacing: 0.1em; margin-bottom: 0.5rem;
+    font-size: 0.72rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;
     font-family: 'Space Mono', monospace;
 }
 .stat-value { font-size: 1.4rem; font-weight: 800; font-family: 'Space Mono', monospace; }
@@ -142,27 +145,16 @@
 .stat-max .stat-value { color: var(--danger); }
 .stat-avg .stat-value { color: var(--warn); }
 
-/* CHART BOX */
 .chart-box {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.5rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.5rem;
 }
 .chart-box-header {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 1.2rem;
 }
 .chart-box-title { font-size: 0.9rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-
-/* NO HISTORY */
-.no-history {
-    text-align: center; padding: 2.5rem;
-    color: var(--muted); font-size: 0.9rem;
-}
-
-/* FAV BUTTON */
-.fav-btn-wrapper form { display: inline; }
+.no-history { text-align: center; padding: 2.5rem; color: var(--muted); font-size: 0.9rem; }
 {% endblock %}
 
 {% block content %}
@@ -175,7 +167,7 @@
         <i class="fa fa-search" style="color:var(--muted); padding: 0.2rem 0.3rem; align-self:center;"></i>
         <input type="text" name="q" placeholder="Buscar producto..." value="{{ query or '' }}" autocomplete="off">
         <button type="submit">Buscar</button>
-        {% if query %}<a href="/" style="align-self:center; color:var(--muted); text-decoration:none; font-size:0.8rem; padding:0 0.3rem;" title="Limpiar">✕</a>{% endif %}
+        {% if query %}<a href="/" style="align-self:center; color:var(--muted); text-decoration:none; font-size:0.8rem; padding:0 0.3rem;">✕</a>{% endif %}
     </form>
 </div>
 
@@ -184,8 +176,12 @@
     <div class="products-panel">
         {% if productos %}
             {% for p in productos %}
-            <a href="/?selected_id={{ p.id }}" class="product-card {% if producto_grafica and producto_grafica.id == p.id %}selected{% endif %}">
-                <img class="product-thumb" src="{{ p.imagen_thumbnail or 'https://via.placeholder.com/52' }}" alt="{{ p.nombre_producto }}" onerror="this.src='https://via.placeholder.com/52'">
+            {% set pid = p.id | string | trim %}
+            <a href="/?selected_id={{ pid }}" class="product-card {% if producto_grafica and producto_grafica.id|string|trim == pid %}selected{% endif %}">
+                <img class="product-thumb"
+                     src="/img-proxy?url={{ p.imagen_thumbnail | urlencode }}"
+                     alt="{{ p.nombre_producto }}"
+                     onerror="this.src='/img-proxy?url='">
                 <div class="product-info">
                     <div class="product-name">{{ p.nombre_producto }}</div>
                     <div class="product-meta">
@@ -193,7 +189,9 @@
                         <span class="product-store">{{ p.tienda_origen }}</span>
                     </div>
                 </div>
-                <div class="product-indicator"></div>
+                {% if user and pid in favoritos_ids %}
+                    <div class="product-fav-dot" title="En tus favoritos"></div>
+                {% endif %}
             </a>
             {% endfor %}
         {% else %}
@@ -209,33 +207,46 @@
     <!-- PANEL DE GRÁFICA -->
     <div class="chart-panel">
         {% if producto_grafica %}
-            <!-- HEADER DEL PRODUCTO -->
+            {% set pid = producto_grafica.id | string | trim %}
+            {% set es_favorito = user and pid in favoritos_ids %}
+
             <div class="detail-header">
                 <img class="detail-thumb"
-                     src="{{ producto_grafica.imagen_thumbnail or 'https://via.placeholder.com/80' }}"
+                     src="/img-proxy?url={{ producto_grafica.imagen_thumbnail | urlencode }}"
                      alt="{{ producto_grafica.nombre_producto }}"
-                     onerror="this.src='https://via.placeholder.com/80'">
-                <div class="detail-info">
+                     onerror="this.src='/img-proxy?url='">
+                <div class="detail-info" style="flex:1;">
                     <div class="detail-name">{{ producto_grafica.nombre_producto }}</div>
                     <div style="margin-top:0.4rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
                         <span class="badge badge-blue">{{ producto_grafica.tienda_origen }}</span>
                         <span style="font-family:'Space Mono',monospace; font-size:0.8rem; color:var(--muted);">Objetivo: $MX {{ "%.2f"|format(producto_grafica.precio_objetivo) }}</span>
                     </div>
                     <div class="detail-actions">
-                        <form action="/buscar-precio" method="post" style="display:inline;">
-                            <input type="hidden" name="producto_id" value="{{ producto_grafica.id }}">
-                            <button type="submit" class="btn btn-accent btn-sm">
+                        <!-- BOTÓN ACTUALIZAR con animación -->
+                        <form action="/buscar-precio" method="post" style="display:inline;" id="updateForm">
+                            <input type="hidden" name="producto_id" value="{{ pid }}">
+                            <button type="submit" class="btn-update" id="updateBtn"
+                                    onclick="this.classList.add('loading'); this.innerHTML='<i class=\'fa fa-rotate\'></i> Actualizando...'">
                                 <i class="fa fa-rotate"></i> Actualizar precio
                             </button>
                         </form>
+
                         {% if user %}
+                            <!-- BOTÓN FAVORITO — toggle según estado -->
                             <form action="/agregar-favorito" method="post" style="display:inline;">
-                                <input type="hidden" name="producto_id" value="{{ producto_grafica.id }}">
-                                <button type="submit" class="btn btn-sm" style="background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.3);color:var(--danger);">
-                                    <i class="fa fa-heart"></i> Favorito
-                                </button>
+                                <input type="hidden" name="producto_id" value="{{ pid }}">
+                                {% if es_favorito %}
+                                    <button type="submit" class="btn-fav btn-fav-remove">
+                                        <i class="fa fa-heart"></i> En favoritos
+                                    </button>
+                                {% else %}
+                                    <button type="submit" class="btn-fav btn-fav-add">
+                                        <i class="fa fa-heart"></i> Agregar favorito
+                                    </button>
+                                {% endif %}
                             </form>
                         {% endif %}
+
                         <a href="{{ producto_grafica.url_original }}" target="_blank" class="btn btn-ghost btn-sm">
                             <i class="fa fa-arrow-up-right-from-square"></i> Ver tienda
                         </a>
@@ -243,7 +254,6 @@
                 </div>
             </div>
 
-            <!-- STATS -->
             {% if stats %}
             <div class="stats-grid">
                 <div class="stat-card stat-current">
@@ -265,7 +275,6 @@
             </div>
             {% endif %}
 
-            <!-- GRÁFICA -->
             <div class="chart-box">
                 <div class="chart-box-header">
                     <span class="chart-box-title">Historial de precios</span>
@@ -284,7 +293,7 @@
             <div class="empty-state" style="min-height: 500px;">
                 <div class="empty-icon">📡</div>
                 <h3>Selecciona un producto</h3>
-                <p>Haz clic en cualquier producto de la lista para ver su historial de precios y estadísticas.</p>
+                <p>Haz clic en cualquier producto para ver su historial de precios.</p>
             </div>
         {% endif %}
     </div>
@@ -296,8 +305,8 @@
 {% if chart_labels %}
 <script>
 const ctx = document.getElementById('priceChart').getContext('2d');
-const labels = {{ chart_labels | tojson }};
-const data   = {{ chart_data  | tojson }};
+const labels  = {{ chart_labels | tojson }};
+const data    = {{ chart_data   | tojson }};
 const objetivo = {{ producto_grafica.precio_objetivo }};
 
 const gradient = ctx.createLinearGradient(0, 0, 0, 280);
@@ -337,37 +346,16 @@ new Chart(ctx, {
         responsive: true,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-            legend: {
-                labels: {
-                    color: '#5a7a8a',
-                    font: { family: 'Space Mono', size: 11 },
-                    boxWidth: 14,
-                }
-            },
+            legend: { labels: { color: '#5a7a8a', font: { family: 'Space Mono', size: 11 }, boxWidth: 14 } },
             tooltip: {
-                backgroundColor: '#131a22',
-                borderColor: '#1e2a35',
-                borderWidth: 1,
-                titleColor: '#e8f0f7',
-                bodyColor: '#5a7a8a',
-                callbacks: {
-                    label: ctx => ` $MX ${ctx.parsed.y.toLocaleString('es-MX', {minimumFractionDigits: 2})}`
-                }
+                backgroundColor: '#131a22', borderColor: '#1e2a35', borderWidth: 1,
+                titleColor: '#e8f0f7', bodyColor: '#5a7a8a',
+                callbacks: { label: ctx => ` $MX ${ctx.parsed.y.toLocaleString('es-MX', {minimumFractionDigits: 2})}` }
             }
         },
         scales: {
-            x: {
-                ticks: { color: '#5a7a8a', font: { family: 'Space Mono', size: 10 }, maxTicksLimit: 8 },
-                grid: { color: 'rgba(30,42,53,0.8)' }
-            },
-            y: {
-                ticks: {
-                    color: '#5a7a8a',
-                    font: { family: 'Space Mono', size: 10 },
-                    callback: v => '$' + v.toLocaleString('es-MX')
-                },
-                grid: { color: 'rgba(30,42,53,0.8)' }
-            }
+            x: { ticks: { color: '#5a7a8a', font: { family: 'Space Mono', size: 10 }, maxTicksLimit: 8 }, grid: { color: 'rgba(30,42,53,0.8)' } },
+            y: { ticks: { color: '#5a7a8a', font: { family: 'Space Mono', size: 10 }, callback: v => '$' + v.toLocaleString('es-MX') }, grid: { color: 'rgba(30,42,53,0.8)' } }
         }
     }
 });

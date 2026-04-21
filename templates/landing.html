@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block title %}MercaBot — Rastrea precios en México{% endblock %}
+
+{% block extra_css %}
+/* HERO */
+.hero {
+    min-height: calc(100vh - 64px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+.hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(0,212,255,0.1) 0%, transparent 70%);
+    pointer-events: none;
+}
+.hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 20px;
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--accent);
+    background: rgba(0,212,255,0.05);
+    margin-bottom: 1.5rem;
+    animation: fadeInDown 0.6s ease both;
+}
+.hero-title {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.2rem;
+    animation: fadeInDown 0.6s ease 0.1s both;
+}
+.hero-title .accent { color: var(--accent); }
+.hero-title .accent2 { color: var(--accent2); }
+.hero-subtitle {
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+    animation: fadeInDown 0.6s ease 0.2s both;
+}
+.hero-actions {
+    display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+    margin-bottom: 4rem;
+    animation: fadeInDown 0.6s ease 0.3s both;
+}
+.hero-btn {
+    padding: 0.85rem 2rem;
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    text-decoration: none;
+    transition: all 0.25s;
+    cursor: pointer; border: none;
+}
+.hero-btn-primary {
+    background: var(--accent); color: var(--bg);
+}
+.hero-btn-primary:hover { background: #33ddff; box-shadow: 0 0 30px rgba(0,212,255,0.3); transform: translateY(-2px); }
+.hero-btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+.hero-btn-secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+/* STATS BAR */
+.stats-bar {
+    display: flex; gap: 3rem; flex-wrap: wrap; justify-content: center;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 5rem;
+    animation: fadeIn 0.8s ease 0.5s both;
+}
+.stat-item { text-align: center; }
+.stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.8rem; font-weight: 700;
+    color: var(--accent);
+}
+.stat-desc { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+/* HOW IT WORKS */
+.section { padding: 5rem 0; }
+.section-label {
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--accent); text-transform: uppercase;
+    letter-spacing: 0.15em; margin-bottom: 0.8rem;
+    font-family: 'Space Mono', monospace;
+}
+.section-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.8rem; }
+.section-sub { color: var(--muted); font-size: 1rem; max-width: 480px; line-height: 1.6; }
+
+.steps-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+    margin-top: 3rem;
+}
+@media(max-width:700px){ .steps-grid { grid-template-columns: 1fr; } }
+.step-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.8rem;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+.step-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s;
+}
+.step-card:hover { border-color: rgba(0,212,255,0.3); transform: translateY(-4px); }
+.step-card:hover::before { transform: scaleX(1); }
+.step-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--accent); margin-bottom: 1rem;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.2);
+    display: inline-block; padding: 3px 10px; border-radius: 6px;
+}
+.step-icon { font-size: 2rem; margin-bottom: 1rem; display: block; }
+.step-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; }
+.step-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+
+/* FEATURES */
+.features-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
+    margin-top: 3rem;
+}
+@media(max-width:600px){ .features-grid { grid-template-columns: 1fr; } }
+.feature-item {
+    display: flex; gap: 1rem; align-items: flex-start;
+    padding: 1.2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: border-color 0.2s;
+}
+.feature-item:hover { border-color: rgba(0,255,157,0.3); }
+.feature-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
+    background: rgba(0,255,157,0.08);
+}
+.feature-title { font-size: 0.92rem; font-weight: 700; margin-bottom: 0.3rem; }
+.feature-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+/* TIENDAS */
+.stores-row {
+    display: flex; gap: 1rem; flex-wrap: wrap;
+    justify-content: center; margin-top: 2rem;
+}
+.store-chip {
+    padding: 0.6rem 1.4rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.88rem; font-weight: 600;
+    color: var(--muted);
+    transition: all 0.2s;
+}
+.store-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* CTA FINAL */
+.cta-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4rem 2rem;
+    text-align: center;
+    margin: 4rem 0;
+    position: relative; overflow: hidden;
+}
+.cta-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 50% 80% at 50% 100%, rgba(0,212,255,0.07) 0%, transparent 60%);
+}
+.cta-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.8rem; }
+.cta-sub { color: var(--muted); margin-bottom: 2rem; font-size: 1rem; }
+
+/* ANIMATIONS */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+}
+{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-badge">
+        <span>📡</span> Tracker de precios para México
+    </div>
+    <h1 class="hero-title">
+        Nunca pagues de más<br>
+        en <span class="accent">Amazon</span> y <span class="accent2">MercadoLibre</span>
+    </h1>
+    <p class="hero-subtitle">
+        MercaBot monitorea los precios de tus productos favoritos y te muestra el historial completo para que compres en el mejor momento.
+    </p>
+    <div class="hero-actions">
+        {% if user %}
+            <a href="/" class="hero-btn hero-btn-primary">Ver productos →</a>
+        {% else %}
+            <a href="/registro" class="hero-btn hero-btn-primary">Empezar gratis →</a>
+            <a href="/login" class="hero-btn hero-btn-secondary">Iniciar sesión</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <div class="stat-num">9+</div>
+        <div class="stat-desc">Productos rastreados</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-num">2</div>
+        <div class="stat-desc">Tiendas monitoreadas</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-num">100%</div>
+        <div class="stat-desc">Gratis</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-num">24/7</div>
+        <div class="stat-desc">Disponible siempre</div>
+    </div>
+</div>
+
+<!-- CÓMO FUNCIONA -->
+<div class="section">
+    <div class="section-label">¿Cómo funciona?</div>
+    <h2 class="section-title">Tres pasos para ahorrar</h2>
+    <p class="section-sub">Sin complicaciones. Registra, elige y monitorea tus productos favoritos.</p>
+
+    <div class="steps-grid">
+        <div class="step-card">
+            <span class="step-num">PASO 01</span>
+            <span class="step-icon">🔍</span>
+            <div class="step-title">Explora productos</div>
+            <p class="step-desc">Navega por nuestra lista de consolas y electrónicos ya agregados o pide al admin que agregue el tuyo.</p>
+        </div>
+        <div class="step-card">
+            <span class="step-num">PASO 02</span>
+            <span class="step-icon">❤️</span>
+            <div class="step-title">Agrega a favoritos</div>
+            <p class="step-desc">Guarda los productos que te interesan en tu lista personal de favoritos con un solo clic.</p>
+        </div>
+        <div class="step-card">
+            <span class="step-num">PASO 03</span>
+            <span class="step-icon">📊</span>
+            <div class="step-title">Monitorea el precio</div>
+            <p class="step-desc">Consulta el historial de precios, mínimos, máximos y promedios para decidir el mejor momento de compra.</p>
+        </div>
+    </div>
+</div>
+
+<!-- FEATURES -->
+<div class="section" style="padding-top:0;">
+    <div class="section-label">Características</div>
+    <h2 class="section-title">Todo lo que necesitas</h2>
+
+    <div class="features-grid">
+        <div class="feature-item">
+            <div class="feature-icon">📈</div>
+            <div>
+                <div class="feature-title">Historial gráfico</div>
+                <p class="feature-desc">Visualiza la evolución del precio en el tiempo con gráficas interactivas.</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon">🎯</div>
+            <div>
+                <div class="feature-title">Precio objetivo</div>
+                <p class="feature-desc">Define cuánto quieres pagar y ve si el precio actual ya llegó a tu meta.</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon">💾</div>
+            <div>
+                <div class="feature-title">Favoritos personalizados</div>
+                <p class="feature-desc">Cada usuario tiene su propia lista de productos guardados.</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon">🛡️</div>
+            <div>
+                <div class="feature-title">Panel de administrador</div>
+                <p class="feature-desc">Gestión completa de usuarios y productos desde un panel dedicado.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TIENDAS -->
+<div class="section" style="padding-top:0; text-align:center;">
+    <div class="section-label">Tiendas compatibles</div>
+    <h2 class="section-title">Donde más compras en México</h2>
+    <div class="stores-row">
+        <div class="store-chip">🛒 Amazon MX</div>
+        <div class="store-chip">🟡 MercadoLibre</div>
+        <div class="store-chip">🔵 Liverpool</div>
+        <div class="store-chip">🟠 Walmart MX</div>
+        <div class="store-chip">🟣 Best Buy MX</div>
+    </div>
+</div>
+
+<!-- CTA FINAL -->
+<div class="cta-section">
+    <h2 class="cta-title">¿Listo para ahorrar?</h2>
+    <p class="cta-sub">Crea tu cuenta gratis y empieza a rastrear precios hoy.</p>
+    {% if user %}
+        <a href="/" class="hero-btn hero-btn-primary">Ver productos →</a>
+    {% else %}
+        <a href="/registro" class="hero-btn hero-btn-primary">Crear cuenta gratis →</a>
+    {% endif %}
+</div>
+{% endblock %}
