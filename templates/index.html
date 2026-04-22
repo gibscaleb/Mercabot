@@ -179,9 +179,9 @@
             {% set pid = p.id | string | trim %}
             <a href="/?selected_id={{ pid }}" class="product-card {% if producto_grafica and producto_grafica.id|string|trim == pid %}selected{% endif %}">
                 <img class="product-thumb"
-                     src="/img-proxy?url={{ p.imagen_thumbnail | urlencode }}"
+                     src="{% if p.imagen_thumbnail and p.imagen_thumbnail.startswith('/static/') %}{{ p.imagen_thumbnail }}{% elif p.imagen_thumbnail %}/img-proxy?url={{ p.imagen_thumbnail | urlencode }}{% else %}{% endif %}"
                      alt="{{ p.nombre_producto }}"
-                     onerror="this.src='/img-proxy?url='">
+                     onerror="this.style.visibility='hidden'">
                 <div class="product-info">
                     <div class="product-name">{{ p.nombre_producto }}</div>
                     <div class="product-meta">
@@ -212,9 +212,9 @@
 
             <div class="detail-header">
                 <img class="detail-thumb"
-                     src="/img-proxy?url={{ producto_grafica.imagen_thumbnail | urlencode }}"
+                     src="{% if producto_grafica.imagen_thumbnail and producto_grafica.imagen_thumbnail.startswith('/static/') %}{{ producto_grafica.imagen_thumbnail }}{% elif producto_grafica.imagen_thumbnail %}/img-proxy?url={{ producto_grafica.imagen_thumbnail | urlencode }}{% else %}{% endif %}"
                      alt="{{ producto_grafica.nombre_producto }}"
-                     onerror="this.src='/img-proxy?url='">
+                     onerror="this.style.visibility='hidden'">
                 <div class="detail-info" style="flex:1;">
                     <div class="detail-name">{{ producto_grafica.nombre_producto }}</div>
                     <div style="margin-top:0.4rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">

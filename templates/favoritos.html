@@ -97,7 +97,7 @@
     <div class="fav-card">
         <div class="fav-top">
             <img class="fav-thumb"
-                 src="{{ fav.imagen_thumbnail or 'https://via.placeholder.com/60' }}"
+                 src="{% if fav.imagen_thumbnail and fav.imagen_thumbnail.startswith('/static/') %}{{ fav.imagen_thumbnail }}{% elif fav.imagen_thumbnail %}/img-proxy?url={{ fav.imagen_thumbnail | urlencode }}{% else %}{% endif %}"
                  alt="{{ fav.nombre_producto }}"
                  onerror="this.src='https://via.placeholder.com/60'">
             <div class="fav-info">

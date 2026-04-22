@@ -5,12 +5,20 @@ import httpx
 import psycopg2
 import bcrypt
 from psycopg2.extras import RealDictCursor
-from fastapi import FastAPI, Request, Form, status
+from fastapi import FastAPI, Request, Form, status, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+import shutil
+import pathlib
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+
+# Crear carpeta de imágenes si no existe y montarla como estática
+IMG_DIR = pathlib.Path("static/img")
+IMG_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ─── STARTUP: CREAR ADMIN SI NO EXISTE ──────────────────────────────────────
 
@@ -235,6 +243,8 @@ async def logout():
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, q: str = None, selected_id: str = None):
     user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/inicio", status_code=302)
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -491,23 +501,101 @@ async def admin_panel(request: Request, prod_error: str = None, prod_success: st
 @app.post("/admin/agregar-producto")
 async def admin_agregar_producto(
     request: Request,
-    nombre_producto: str = Form(...), tienda_origen: str = Form(...),
-    precio_objetivo: float = Form(...), url_original: str = Form(...),
-    imagen_thumbnail: str = Form(""),
+    nombre_producto:  str        = Form(...),
+    tienda_origen:    str        = Form(...),
+    precio_objetivo:  float      = Form(...),
+    url_original:     str        = Form(...),
+    imagen_file:      UploadFile = File(None),
 ):
     if not _admin_guard(request):
         return RedirectResponse(url="/", status_code=303)
+
+    producto_id = str(uuid.uuid4())
+    imagen_path = None
+
+    # Guardar imagen si se subió un archivo
+    if imagen_file and imagen_file.filename:
+        ext = pathlib.Path(imagen_file.filename).suffix.lower()
+        if ext not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+            ext = ".jpg"
+        nombre_archivo = f"{producto_id}{ext}"
+        destino = IMG_DIR / nombre_archivo
+        with destino.open("wb") as f:
+            shutil.copyfileobj(imagen_file.file, f)
+        imagen_path = f"/static/img/{nombre_archivo}"
+
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute(
             "INSERT INTO productos (id, nombre_producto, url_original, precio_objetivo, tienda_origen, imagen_thumbnail) VALUES (%s,%s,%s,%s,%s,%s)",
-            (str(uuid.uuid4()), nombre_producto, url_original, precio_objetivo, tienda_origen, imagen_thumbnail or None)
+            (producto_id, nombre_producto, url_original, precio_objetivo, tienda_origen, imagen_path)
         )
         conn.commit()
         return RedirectResponse(url="/admin?prod_success=Producto+agregado+correctamente", status_code=303)
+    except Exception as e:
+        return RedirectResponse(url=f"/admin?prod_error=Error+al+agregar+producto", status_code=303)
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.post("/admin/editar-producto")
+async def admin_editar_producto(
+    request: Request,
+    producto_id:     str        = Form(...),
+    nombre_producto: str        = Form(...),
+    tienda_origen:   str        = Form(...),
+    precio_objetivo: float      = Form(...),
+    url_original:    str        = Form(...),
+    imagen_file:     UploadFile = File(None),
+):
+    if not _admin_guard(request):
+        return RedirectResponse(url="/", status_code=303)
+
+    imagen_path = None
+
+    # Si se subió una nueva imagen, guardarla
+    if imagen_file and imagen_file.filename:
+        ext = pathlib.Path(imagen_file.filename).suffix.lower()
+        if ext not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+            ext = ".jpg"
+        nombre_archivo = f"{producto_id}{ext}"
+        destino = IMG_DIR / nombre_archivo
+        with destino.open("wb") as f:
+            shutil.copyfileobj(imagen_file.file, f)
+        imagen_path = f"/static/img/{nombre_archivo}"
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        if imagen_path:
+            cur.execute(
+                """UPDATE productos SET
+                    nombre_producto = %s,
+                    tienda_origen   = %s,
+                    precio_objetivo = %s,
+                    url_original    = %s,
+                    imagen_thumbnail = %s
+                   WHERE id = %s""",
+                (nombre_producto, tienda_origen, precio_objetivo,
+                 url_original, imagen_path, producto_id)
+            )
+        else:
+            cur.execute(
+                """UPDATE productos SET
+                    nombre_producto = %s,
+                    tienda_origen   = %s,
+                    precio_objetivo = %s,
+                    url_original    = %s
+                   WHERE id = %s""",
+                (nombre_producto, tienda_origen, precio_objetivo,
+                 url_original, producto_id)
+            )
+        conn.commit()
+        return RedirectResponse(url="/admin?prod_success=Producto+actualizado+correctamente", status_code=303)
     except Exception:
-        return RedirectResponse(url="/admin?prod_error=Error+al+agregar+producto", status_code=303)
+        return RedirectResponse(url="/admin?prod_error=Error+al+actualizar+producto", status_code=303)
     finally:
         cur.close()
         conn.close()

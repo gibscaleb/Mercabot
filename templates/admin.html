@@ -281,6 +281,17 @@
                                 <a href="/?selected_id={{ p.id }}" class="btn btn-sm btn-ghost" title="Ver historial">
                                     <i class="fa fa-chart-line"></i>
                                 </a>
+                                <button class="btn btn-sm btn-edit-prod" 
+                                    style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.2);color:var(--accent);"
+                                    title="Editar producto"
+                                    data-id="{{ p.id }}"
+                                    data-nombre="{{ p.nombre_producto | e }}"
+                                    data-tienda="{{ p.tienda_origen | e }}"
+                                    data-precio="{{ p.precio_objetivo }}"
+                                    data-url="{{ p.url_original | e }}"
+                                    data-img="{{ (p.imagen_thumbnail or '') | e }}">
+                                    <i class="fa fa-pen"></i>
+                                </button>
                                 <form action="/admin/eliminar-producto" method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar producto y su historial?')">
                                     <input type="hidden" name="producto_id" value="{{ p.id }}">
                                     <button type="submit" class="btn btn-red btn-sm" title="Eliminar producto">
@@ -308,7 +319,7 @@
                 {% if prod_success %}
                 <div class="alert alert-success"><i class="fa fa-circle-check"></i> {{ prod_success }}</div>
                 {% endif %}
-                <form action="/admin/agregar-producto" method="post">
+                <form action="/admin/agregar-producto" method="post" enctype="multipart/form-data">
                     <div class="form-group">
                         <label>Nombre del producto</label>
                         <input type="text" name="nombre_producto" placeholder="Ej: Nintendo Switch OLED — Blanco" required>
@@ -332,11 +343,21 @@
                     </div>
                     <div class="form-group">
                         <label>URL del producto en tienda</label>
-                        <input type="url" name="url_original" placeholder="https://amazon.mx/..." required>
+                        <input type="url" name="url_original" placeholder="https://amazon.com.mx/..." required>
                     </div>
                     <div class="form-group">
-                        <label>URL de imagen (thumbnail)</label>
-                        <input type="url" name="imagen_thumbnail" placeholder="https://...">
+                        <label>Imagen del producto <span style="color:var(--muted);font-weight:400;">(JPG, PNG, WEBP — cualquier tamaño)</span></label>
+                        <div class="file-drop-area" id="fileDropArea">
+                            <i class="fa fa-image" style="font-size:1.8rem;color:var(--muted);margin-bottom:0.5rem;display:block;"></i>
+                            <p class="file-drop-text">Arrastra una imagen aquí o <span style="color:var(--accent);cursor:pointer;" onclick="document.getElementById('imagen_file').click()">selecciona un archivo</span></p>
+                            <p class="file-drop-hint">Opcional — si no subes imagen el producto no tendrá miniatura</p>
+                            <input type="file" id="imagen_file" name="imagen_file" accept="image/*" style="display:none;" onchange="previewImage(this)">
+                        </div>
+                        <div id="imagePreview" style="display:none; margin-top:0.8rem; position:relative; width:fit-content;">
+                            <img id="previewImg" src="" alt="preview" style="max-height:120px;max-width:200px;border-radius:8px;border:1px solid var(--border);object-fit:contain;background:#fff;padding:4px;">
+                            <button type="button" onclick="clearImage()" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:var(--danger);border:none;color:#fff;cursor:pointer;font-size:0.75rem;display:flex;align-items:center;justify-content:center;">✕</button>
+                            <p id="fileName" style="font-size:0.75rem;color:var(--muted);margin-top:0.3rem;"></p>
+                        </div>
                     </div>
                     <div style="margin-top:1rem;">
                         <button type="submit" class="btn btn-green" style="width:100%;justify-content:center;padding:0.8rem;">
@@ -350,7 +371,220 @@
     </div>
 </div>
 
+<!-- MODAL EDITAR PRODUCTO -->
+<div id="editModal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:520px;margin:1rem;animation:slideUp 0.2s ease;max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+            <h3 style="font-size:1.1rem;font-weight:700;">✏️ Editar Producto</h3>
+            <button onclick="cerrarEditar()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.3rem;line-height:1;">×</button>
+        </div>
+        <form id="editForm" action="/admin/editar-producto" method="post" enctype="multipart/form-data">
+            <input type="hidden" id="edit_id" name="producto_id">
+            <div class="form-group">
+                <label>Nombre del producto</label>
+                <input type="text" id="edit_nombre" name="nombre_producto" required>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div class="form-group">
+                    <label>Tienda</label>
+                    <select id="edit_tienda" name="tienda_origen">
+                        <option>Amazon MX</option>
+                        <option>MercadoLibre</option>
+                        <option>Liverpool</option>
+                        <option>Walmart MX</option>
+                        <option>Best Buy MX</option>
+                        <option>Otra</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Precio objetivo (MXN)</label>
+                    <input type="number" id="edit_precio" name="precio_objetivo" step="0.01" min="1" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>URL del producto en tienda</label>
+                <input type="url" id="edit_url" name="url_original" required>
+            </div>
+            <div class="form-group">
+                <label>Imagen actual</label>
+                <div id="edit_img_preview" style="margin-bottom:0.8rem;display:none;">
+                    <img id="edit_img_actual" src="" alt="actual" style="max-height:80px;max-width:140px;border-radius:8px;border:1px solid var(--border);object-fit:contain;background:#fff;padding:4px;">
+                </div>
+                <label style="text-transform:none;font-size:0.8rem;color:var(--muted);font-weight:400;margin-bottom:0.4rem;display:block;">Reemplazar imagen <span style="opacity:0.6;">(JPG, PNG, WEBP — opcional)</span></label>
+                <div class="file-drop-area" id="editDropArea" style="padding:1rem;">
+                    <i class="fa fa-image" style="font-size:1.4rem;color:var(--muted);margin-bottom:0.4rem;display:block;"></i>
+                    <p class="file-drop-text" id="editDropText">Arrastra o <span style="color:var(--accent);cursor:pointer;" onclick="document.getElementById('edit_imagen_file').click()">selecciona un archivo</span></p>
+                    <input type="file" id="edit_imagen_file" name="imagen_file" accept="image/*" style="display:none;" onchange="previewEditImage(this)">
+                </div>
+                <div id="editImgPreviewNew" style="display:none;margin-top:0.6rem;position:relative;width:fit-content;">
+                    <img id="editPreviewImg" src="" style="max-height:80px;max-width:140px;border-radius:8px;border:1px solid var(--border);object-fit:contain;background:#fff;padding:4px;">
+                    <button type="button" onclick="clearEditImage()" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:var(--danger);border:none;color:#fff;cursor:pointer;font-size:0.7rem;">✕</button>
+                </div>
+            </div>
+            <div style="display:flex;gap:0.7rem;margin-top:1.2rem;">
+                <button type="submit" class="btn btn-accent" style="flex:1;justify-content:center;padding:0.8rem;">
+                    <i class="fa fa-floppy-disk"></i> Guardar cambios
+                </button>
+                <button type="button" onclick="cerrarEditar()" class="btn btn-ghost" style="padding:0.8rem 1.2rem;">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.file-drop-area {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+}
+.file-drop-area:hover, .file-drop-area.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.04);
+}
+.file-drop-text { font-size: 0.88rem; color: var(--muted); margin: 0; }
+.file-drop-hint { font-size: 0.75rem; color: var(--muted); opacity: 0.6; margin-top: 0.3rem; }
+</style>
+
 <script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('previewImg').src = e.target.result;
+            document.getElementById('fileName').textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+            document.getElementById('imagePreview').style.display = 'block';
+            document.querySelector('.file-drop-text').textContent = '✓ Imagen seleccionada';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function clearImage() {
+    document.getElementById('imagen_file').value = '';
+    document.getElementById('imagePreview').style.display = 'none';
+    document.querySelector('.file-drop-text').innerHTML = 'Arrastra una imagen aquí o <span style="color:var(--accent);cursor:pointer;" onclick="document.getElementById(\'imagen_file\').click()">selecciona un archivo</span>';
+}
+
+// Drag & drop
+const dropArea = document.getElementById('fileDropArea');
+if (dropArea) {
+    dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('drag-over'); });
+    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('drag-over'));
+    dropArea.addEventListener('drop', e => {
+        e.preventDefault();
+        dropArea.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            document.getElementById('imagen_file').files = dt.files;
+            previewImage(document.getElementById('imagen_file'));
+        }
+    });
+    dropArea.addEventListener('click', () => document.getElementById('imagen_file').click());
+}
+
+// Delegación de eventos — funciona aunque el DOM no esté listo
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-edit-prod');
+    if (!btn) return;
+
+    const id     = btn.dataset.id;
+    const nombre = btn.dataset.nombre;
+    const tienda = btn.dataset.tienda;
+    const precio = btn.dataset.precio;
+    const url    = btn.dataset.url;
+    const img    = btn.dataset.img;
+
+    document.getElementById('edit_id').value     = id;
+    document.getElementById('edit_nombre').value = nombre;
+    document.getElementById('edit_precio').value = precio;
+    document.getElementById('edit_url').value    = url;
+
+    // Seleccionar tienda correcta en el select
+    const sel = document.getElementById('edit_tienda');
+    for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].text === tienda || sel.options[i].value === tienda) {
+            sel.selectedIndex = i;
+            break;
+        }
+    }
+
+    // Mostrar imagen actual si existe
+    const previewDiv = document.getElementById('edit_img_preview');
+    const previewImg = document.getElementById('edit_img_actual');
+    if (img) {
+        previewImg.src = img;
+        previewDiv.style.display = 'block';
+    } else {
+        previewDiv.style.display = 'none';
+    }
+
+    clearEditImage();
+
+    document.getElementById('editModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+});
+
+function abrirEditar() {} // mantener por compatibilidad
+
+function cerrarEditar() {
+    document.getElementById('editModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function previewEditImage(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('editPreviewImg').src = e.target.result;
+            document.getElementById('editImgPreviewNew').style.display = 'block';
+            document.getElementById('editDropText').textContent = '✓ ' + file.name;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function clearEditImage() {
+    document.getElementById('edit_imagen_file').value = '';
+    document.getElementById('editImgPreviewNew').style.display = 'none';
+    document.getElementById('editDropText').innerHTML = 'Arrastra o <span style="color:var(--accent);cursor:pointer;" onclick="document.getElementById(\'edit_imagen_file\').click()">selecciona un archivo</span>';
+}
+
+// Drag & drop para el modal de edición
+document.addEventListener('DOMContentLoaded', () => {
+    const editDrop = document.getElementById('editDropArea');
+    if (editDrop) {
+        editDrop.addEventListener('dragover', e => { e.preventDefault(); editDrop.classList.add('drag-over'); });
+        editDrop.addEventListener('dragleave', () => editDrop.classList.remove('drag-over'));
+        editDrop.addEventListener('drop', e => {
+            e.preventDefault();
+            editDrop.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                document.getElementById('edit_imagen_file').files = dt.files;
+                previewEditImage(document.getElementById('edit_imagen_file'));
+            }
+        });
+        editDrop.addEventListener('click', () => document.getElementById('edit_imagen_file').click());
+    }
+});
+
+// Cerrar modal al hacer click fuera
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) cerrarEditar();
+});
+
 function showSection(name, btn) {
     document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
